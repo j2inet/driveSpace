@@ -1,0 +1,6 @@
+{
+    "foldersToIgnore": [
+        "Library",
+	    "/Volumes"
+    ]
+}

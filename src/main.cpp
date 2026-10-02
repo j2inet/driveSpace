@@ -1,11 +1,14 @@
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <filesystem>
 #include <algorithm>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include "ansi.h"
+#include "ansi.hpp"
+#include "json.hpp"
+
 
 
 //http://github.com/j2inet/driveSpace
@@ -15,6 +18,38 @@ struct DirectoryInfo {
 	std::string name;
 	size_t size;
 };
+
+std::vector<std::string> foldersToIgnore = {
+	"Library",
+	"/Volumes"
+};
+
+
+void loadConfiguration(const std::string& configPath) {
+	std::ifstream configFile(configPath);
+	if(configFile.is_open()) {
+		nlohmann::json configJson;
+		configFile >> configJson;
+		if(configJson.contains("foldersToIgnore")) {
+			foldersToIgnore.clear();
+			for(const auto& folder : configJson["foldersToIgnore"]) {
+				foldersToIgnore.push_back(folder.get<std::string>());
+			}
+		}
+	}
+}
+
+
+bool shouldIgnoreFolder(const std::string& folderPath) {
+	for(const auto& folder : foldersToIgnore) {
+		if(folderPath[0] == '/' && folderPath == folder)
+			return true;
+		if(folderPath.ends_with(folder)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 DirectoryInfo getDirectorySize(std::string sourcePath) 
 {
@@ -87,6 +122,8 @@ int main(int argc, char** argv)
 	std::string startPath = "./";
 	if(argc > 1)
 		startPath = argv[1];
+	loadConfiguration("configuration.json");
+
 	std::vector<DirectoryInfo> directoryInfos;
 	try 
 	{
