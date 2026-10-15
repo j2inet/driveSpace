@@ -6,8 +6,16 @@
 #include <algorithm>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+
 #include "ansi.hpp"
 #include "json.hpp"
+
+
+
+using namespace ftxui;
 
 
 
@@ -118,6 +126,9 @@ void showDirectorySizes(const std::vector<DirectoryInfo>& directoryInfos) {
 
 int main(int argc, char** argv) 
 {
+
+
+
 	std::cout << "Getting drive space" << std::endl;
 	std::string startPath = "./";
 	if(argc > 1)
@@ -157,5 +168,52 @@ int main(int argc, char** argv)
 		std::cerr << ANSI::red() << "Error:" << ANSI::reset() << e.what() << std::endl;
 	}
 	showDirectorySizes(directoryInfos);
+
+
+		auto screen = ScreenInteractive::TerminalOutput();
+	
+	std::vector<std::string> folderNames;
+	std::vector<std::string> fileNames;
+	int selectedFolder = 0;
+	int selectedFile = 0;
+
+	auto folderMenu = Menu(&folderNames, &selectedFolder);
+	auto fileMenu = Menu(&fileNames, &selectedFile);
+
+	for(const auto& dirInfo : directoryInfos) {
+		folderNames.push_back(dirInfo.name);
+	}
+	for(const auto& entry : std::filesystem::directory_iterator(startPath)) {
+		if(entry.is_regular_file() && !entry.is_directory()) {
+			fileNames.push_back(entry.path().string());
+		}
+	}
+
+	auto renderer = Renderer([]{
+		return window(
+		text("Drive Space Analyzer"),
+		hbox({
+			vbox({
+				bold(text("Folders")),
+				folderMenu
+			}),
+			separator(),
+			vbox({
+				fileMenu
+			}),
+			
+			separator(),
+			vbox({
+				bold(text("Files")),
+				menu(fileNames)
+			})
+		})
+	);
+	});
+
+	while(true) {
+		screen.render();
+	}
+
 	return 0;
 }
