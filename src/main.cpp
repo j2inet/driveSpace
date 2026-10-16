@@ -9,6 +9,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #include "ansi.hpp"
 #include "json.hpp"
@@ -189,28 +190,28 @@ int main(int argc, char** argv)
 		}
 	}
 
-	auto renderer = Renderer([]{
+	auto renderer = Renderer([folderMenu, fileMenu]{
 		return window(
-		text("Drive Space Analyzer"),
-		hbox({
-			vbox({
-				bold(text("Folders")),
-				folderMenu
-			}),
-			separator(),
-			vbox({
-				fileMenu
-			}),
-			
-			separator(),
-			vbox({
-				bold(text("Files")),
-				menu(fileNames)
+			text("Drive Space Analyzer"),
+			hbox({
+				vbox({
+					bold(text("Folders")),
+					folderMenu
+				}),
+				separator(),
+				vbox({
+					fileMenu
+				}),
+				
+				separator(),
+				vbox({
+					bold(text("Files")),
+					menu(fileNames)
+				})
 			})
-		})
-	);
+		);
 	});
-
+	std::cout << "rendering" << std::endl;
 	while(true) {
 		screen.render();
 	}
