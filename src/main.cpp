@@ -191,26 +191,36 @@ int main(int argc, char** argv)
 	auto screen = ScreenInteractive::TerminalOutput();
 	auto folderMenu = Menu(&folderNames, &selectedFolder);
 	auto fileMenu = Menu(&fileNames, &selectedFile);
-	auto renderer = Renderer([folderNames, &selectedFolder, fileNames, &selectedFile, folderMenu, fileMenu]{
-		return window(
-			text("Drive Space Analyzer"),
-			hbox({
-				vbox({
+
+	int left_pane_width = 30;
+
+	auto folderRegion = Renderer(
+		[&]{ return vbox({
 					text("Folders") | bold,
 					separator(),
 					folderMenu->Render()
-				}),
-				separator(),
-				vbox({
+				});});
+
+	auto fileRegion = Renderer([&]{
+		return vbox({
 					text("Files")|bold,
 					separator(),
 					fileMenu->Render()
-				})
-			})
+				});});
+
+	
+	auto rootNode = Renderer([&]{
+		return window(
+			text("Drive Space Analyzer"),
+			ResizableSplitLeft(
+				folderRegion,
+				fileRegion,
+				&left_pane_width
+			)->Render()
 		);
 	});
 
-auto event_handler = CatchEvent(renderer, [&](const Event& event){
+auto event_handler = CatchEvent(rootNode, [&](const Event& event){
 	if(event == Event::Character('+') || event == Event::Character('=')) {
 		++selectedFolder;
 		if(selectedFolder >= folderNames.size()) selectedFolder = folderNames.size() - 1;
@@ -224,6 +234,15 @@ auto event_handler = CatchEvent(renderer, [&](const Event& event){
 	if(event == Event::Escape)
 	{
 		ScreenInteractive::Active()->ExitLoopClosure();
+		return true;
+	}
+
+	if(event == Event::ArrowLeft) {
+		left_pane_width = std::max(0, left_pane_width - 1);
+		return true;
+	}
+	if(event == Event::ArrowRight) {
+		++left_pane_width;
 		return true;
 	}
 	return false;
