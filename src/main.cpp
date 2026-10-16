@@ -171,15 +171,13 @@ int main(int argc, char** argv)
 	showDirectorySizes(directoryInfos);
 
 
-		auto screen = ScreenInteractive::TerminalOutput();
+	
 	
 	std::vector<std::string> folderNames;
 	std::vector<std::string> fileNames;
 	int selectedFolder = 0;
 	int selectedFile = 0;
 
-	auto folderMenu = Menu(&folderNames, &selectedFolder);
-	auto fileMenu = Menu(&fileNames, &selectedFile);
 
 	for(const auto& dirInfo : directoryInfos) {
 		folderNames.push_back(dirInfo.name);
@@ -190,30 +188,51 @@ int main(int argc, char** argv)
 		}
 	}
 
-	auto renderer = Renderer([folderMenu, fileMenu]{
+	auto screen = ScreenInteractive::TerminalOutput();
+	auto folderMenu = Menu(&folderNames, &selectedFolder);
+	auto fileMenu = Menu(&fileNames, &selectedFile);
+	auto renderer = Renderer([folderNames, &selectedFolder, fileNames, &selectedFile, folderMenu, fileMenu]{
 		return window(
 			text("Drive Space Analyzer"),
 			hbox({
 				vbox({
-					bold(text("Folders")),
-					folderMenu
+					text("Folders") | bold,
+					separator(),
+					folderMenu->Render()
 				}),
 				separator(),
 				vbox({
-					fileMenu
-				}),
-				
-				separator(),
-				vbox({
-					bold(text("Files")),
-					menu(fileNames)
+					text("Files")|bold,
+					separator(),
+					fileMenu->Render()
 				})
 			})
 		);
 	});
+
+auto event_handler = CatchEvent(renderer, [&](const Event& event){
+	if(event == Event::Character('+') || event == Event::Character('=')) {
+		++selectedFolder;
+		if(selectedFolder >= folderNames.size()) selectedFolder = folderNames.size() - 1;
+		return true;
+	}
+	if(event == Event::Character('-')) {
+		--selectedFolder;
+		if(selectedFolder < 0) selectedFolder = 0;
+		return true;
+	}
+	if(event == Event::Escape)
+	{
+		ScreenInteractive::Active()->ExitLoopClosure();
+		return true;
+	}
+	return false;
+});
+
 	std::cout << "rendering" << std::endl;
+	folderMenu->TakeFocus();
 	while(true) {
-		screen.render();
+		screen.Loop(event_handler);
 	}
 
 	return 0;
